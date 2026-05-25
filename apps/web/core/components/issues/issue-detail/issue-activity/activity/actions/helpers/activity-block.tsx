@@ -50,7 +50,7 @@ export function IssueActivityBlockComponent(props: TIssueActivityBlockComponent)
       <div className="z-[4] flex h-7 w-7 flex-shrink-0 items-center justify-center overflow-hidden rounded-lg border border-subtle bg-layer-2 text-secondary shadow-raised-100">
         {icon ? icon : <Network className="h-3.5 w-3.5" />}
       </div>
-      <div className="w-full truncate text-secondary">
+      <div className="min-w-0 flex-1 truncate text-secondary">
         {!activity?.field && activity?.verb === "created" ? (
           <IssueCreatorDisplay activityId={activityId} customUserName={customUserName} />
         ) : (
@@ -67,13 +67,15 @@ export function IssueActivityBlockComponent(props: TIssueActivityBlockComponent)
         </span>
       </div>
       {currentUser?.id && workspaceSlug && projectId && issueId && (
-        <IssueActivityRowReactions
-          workspaceSlug={workspaceSlug}
-          projectId={projectId}
-          issueId={issueId}
-          activityId={activityId}
-          currentUserId={currentUser.id}
-        />
+        <div className="flex-shrink-0">
+          <IssueActivityRowReactions
+            workspaceSlug={workspaceSlug}
+            projectId={projectId}
+            issueId={issueId}
+            activityId={activityId}
+            currentUserId={currentUser.id}
+          />
+        </div>
       )}
     </div>
   );
