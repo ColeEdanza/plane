@@ -42,15 +42,39 @@ class S3Storage(S3Boto3Storage):
                 endpoint_protocol = "https"
             else:
                 endpoint_protocol = request.scheme if request else "http"
+            # Default endpoint: the request host. Assumes a reverse proxy in
+            # front of the api forwards /<bucket>/* to plane-minio (see the
+            # production Caddyfile). Used for both direct boto3 calls and
+            # presigned URLs when no explicit override is configured.
+            request_host_endpoint = (
+                f"{endpoint_protocol}://{request.get_host()}" if request else self.aws_s3_endpoint_url
+            )
             # Create an S3 client for MinIO
             self.s3_client = boto3.client(
                 "s3",
                 aws_access_key_id=self.aws_access_key_id,
                 aws_secret_access_key=self.aws_secret_access_key,
                 region_name=self.aws_region,
-                endpoint_url=(f"{endpoint_protocol}://{request.get_host()}" if request else self.aws_s3_endpoint_url),
+                endpoint_url=request_host_endpoint,
                 config=boto3.session.Config(signature_version="s3v4"),
             )
+            # Optional: a separate client whose presigned URLs point at a
+            # browser-reachable MinIO endpoint. For deployments without a
+            # reverse proxy forwarding /<bucket>/* to plane-minio (e.g. local
+            # dev compose), set AWS_S3_PRESIGNED_ENDPOINT_URL to the MinIO
+            # URL the browser can reach (e.g. http://localhost:9000).
+            presigned_endpoint = os.environ.get("AWS_S3_PRESIGNED_ENDPOINT_URL")
+            if presigned_endpoint:
+                self._presigning_client = boto3.client(
+                    "s3",
+                    aws_access_key_id=self.aws_access_key_id,
+                    aws_secret_access_key=self.aws_secret_access_key,
+                    region_name=self.aws_region,
+                    endpoint_url=presigned_endpoint,
+                    config=boto3.session.Config(signature_version="s3v4"),
+                )
+            else:
+                self._presigning_client = self.s3_client
         else:
             # Create an S3 client
             self.s3_client = boto3.client(
@@ -61,6 +85,7 @@ class S3Storage(S3Boto3Storage):
                 endpoint_url=self.aws_s3_endpoint_url,
                 config=boto3.session.Config(signature_version="s3v4"),
             )
+            self._presigning_client = self.s3_client
 
     def generate_presigned_post(self, object_name, file_type, file_size, expiration=None):
         """Generate a presigned URL to upload an S3 object"""
@@ -84,7 +109,7 @@ class S3Storage(S3Boto3Storage):
         # Generate the presigned POST URL
         try:
             # Generate a presigned URL for the S3 object
-            response = self.s3_client.generate_presigned_post(
+            response = self._presigning_client.generate_presigned_post(
                 Bucket=self.aws_storage_bucket_name,
                 Key=object_name,
                 Fields=fields,
@@ -122,7 +147,7 @@ class S3Storage(S3Boto3Storage):
             expiration = self.signed_url_expiration
         content_disposition = self._get_content_disposition(disposition, filename)
         try:
-            response = self.s3_client.generate_presigned_url(
+            response = self._presigning_client.generate_presigned_url(
                 "get_object",
                 Params={
                     "Bucket": self.aws_storage_bucket_name,
