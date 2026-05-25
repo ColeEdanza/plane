@@ -682,6 +682,7 @@ class CommentReactionSerializer(BaseSerializer):
             "created_by",
             "updated_by",
         ]
+        read_only_fields = ["workspace", "project", "comment", "actor", "deleted_at", "created_by", "updated_by"]
 
 
 class IssueActivityReactionSerializer(BaseSerializer):
