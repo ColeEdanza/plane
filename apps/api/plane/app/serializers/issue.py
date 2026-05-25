@@ -21,6 +21,7 @@ from plane.db.models import (
     User,
     Issue,
     IssueActivity,
+    IssueActivityReaction,
     IssueComment,
     ProjectUserProperty,
     IssueAssignee,
@@ -681,7 +682,16 @@ class CommentReactionSerializer(BaseSerializer):
             "created_by",
             "updated_by",
         ]
-        read_only_fields = ["workspace", "project", "comment", "actor", "deleted_at", "created_by", "updated_by"]
+
+
+class IssueActivityReactionSerializer(BaseSerializer):
+    display_name = serializers.CharField(source="actor.display_name", read_only=True)
+    actor_detail = UserLiteSerializer(read_only=True, source="actor")
+
+    class Meta:
+        model = IssueActivityReaction
+        fields = "__all__"
+        read_only_fields = ["workspace", "project", "activity", "actor", "deleted_at"]
 
 
 class IssueVoteSerializer(BaseSerializer):
