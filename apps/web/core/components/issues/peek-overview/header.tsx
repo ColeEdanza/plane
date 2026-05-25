@@ -25,9 +25,11 @@ import { useUser } from "@/hooks/store/user";
 import { usePlatformOS } from "@/hooks/use-platform-os";
 // local imports
 import { IssueSubscription } from "../issue-detail/subscription";
+import type { TIssueOperations } from "../issue-detail";
 import { WorkItemDetailQuickActions } from "../issue-layouts/quick-action-dropdowns";
 import { NameDescriptionUpdateStatus } from "../issue-update-status";
 import { IconButton } from "@plane/propel/icon-button";
+import { StateDropdown } from "@/components/dropdowns/state/dropdown";
 
 export type TPeekModes = "side-peek" | "modal" | "full-screen";
 
@@ -65,6 +67,7 @@ export type PeekOverviewHeaderProps = {
   toggleEditIssueModal: (value: boolean) => void;
   handleRestoreIssue: () => Promise<void>;
   isSubmitting: TNameDescriptionLoader;
+  issueOperations: TIssueOperations;
 };
 
 export const IssuePeekOverviewHeader = observer(function IssuePeekOverviewHeader(props: PeekOverviewHeaderProps) {
@@ -84,6 +87,7 @@ export const IssuePeekOverviewHeader = observer(function IssuePeekOverviewHeader
     toggleEditIssueModal,
     handleRestoreIssue,
     isSubmitting,
+    issueOperations,
   } = props;
   // ref
   const parentRef = useRef<HTMLDivElement>(null);
@@ -119,12 +123,13 @@ export const IssuePeekOverviewHeader = observer(function IssuePeekOverviewHeader
   const handleCopyText = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation();
     e.preventDefault();
-    copyUrlToClipboard(workItemLink).then(() => {
+    return copyUrlToClipboard(workItemLink).then(() => {
       setToast({
         type: TOAST_TYPE.SUCCESS,
         title: t("common.link_copied"),
         message: t("common.link_copied_to_clipboard"),
       });
+      return undefined;
     });
   };
 
@@ -134,6 +139,7 @@ export const IssuePeekOverviewHeader = observer(function IssuePeekOverviewHeader
 
       return deleteIssue(workspaceSlug, projectId, issueId).then(() => {
         setPeekIssue(undefined);
+        return undefined;
       });
     } catch (_error) {
       setToast({
@@ -154,76 +160,87 @@ export const IssuePeekOverviewHeader = observer(function IssuePeekOverviewHeader
 
   return (
     <div
-      className={`relative flex items-center justify-between p-4 ${
+      className={`relative flex items-center justify-between gap-3 p-4 ${
         currentMode?.key === "full-screen" ? "border-b border-subtle" : ""
       }`}
     >
-      <div className="flex items-center gap-4">
+      {/* LEFT: state pill only */}
+      {issueDetails?.project_id ? (
+        <div className="flex-shrink-0">
+          <StateDropdown
+            value={issueDetails?.state_id}
+            onChange={(val) => issueOperations.update(workspaceSlug, projectId, issueId, { state_id: val })}
+            projectId={issueDetails.project_id}
+            disabled={disabled || isArchived}
+            buttonVariant="border-with-text"
+            showTooltip={false}
+            dropdownArrow
+          />
+        </div>
+      ) : (
+        <span />
+      )}
+
+      {/* RIGHT: action cluster — subscribe / link / more / close / fullscreen / peek-mode */}
+      <div className="flex items-center gap-3">
+        <NameDescriptionUpdateStatus isSubmitting={isSubmitting} />
+        {currentUser && !isArchived && (
+          <IssueSubscription workspaceSlug={workspaceSlug} projectId={projectId} issueId={issueId} />
+        )}
+        <Tooltip tooltipContent={t("common.actions.copy_link")} isMobile={isMobile}>
+          <IconButton variant="secondary" size="lg" onClick={handleCopyText} icon={CopyLinkIcon} />
+        </Tooltip>
+        {issueDetails && (
+          <WorkItemDetailQuickActions
+            parentRef={parentRef}
+            issue={issueDetails}
+            handleDelete={handleDeleteIssue}
+            handleArchive={handleArchiveIssue}
+            handleRestore={handleRestoreIssue}
+            readOnly={disabled}
+            toggleDeleteIssueModal={toggleDeleteIssueModal}
+            toggleArchiveIssueModal={toggleArchiveIssueModal}
+            toggleDuplicateIssueModal={toggleDuplicateIssueModal}
+            toggleEditIssueModal={toggleEditIssueModal}
+            isPeekMode
+          />
+        )}
         <Tooltip tooltipContent={t("common.close_peek_view")} isMobile={isMobile}>
-          <button onClick={removeRoutePeekId}>
+          <button onClick={removeRoutePeekId} type="button">
             <MoveRight className="h-4 w-4 text-tertiary hover:text-secondary" />
           </button>
         </Tooltip>
-
         <Tooltip tooltipContent={t("issue.open_in_full_screen")} isMobile={isMobile}>
           <Link href={workItemLink} onClick={() => removeRoutePeekId()}>
             <MoveDiagonal className="h-4 w-4 text-tertiary hover:text-secondary" />
           </Link>
         </Tooltip>
         {currentMode && embedIssue === false && (
-          <div className="flex flex-shrink-0 items-center gap-2">
-            <CustomSelect
-              value={currentMode}
-              onChange={(val: any) => setPeekMode(val)}
-              customButton={
-                <Tooltip tooltipContent={t("common.toggle_peek_view_layout")} isMobile={isMobile}>
-                  <button type="button" className="">
-                    <currentMode.icon className="h-4 w-4 text-tertiary hover:text-secondary" />
-                  </button>
-                </Tooltip>
-              }
-            >
-              {PEEK_OPTIONS.map((mode) => (
-                <CustomSelect.Option key={mode.key} value={mode.key}>
-                  <div
-                    className={`flex items-center gap-1.5 ${
-                      currentMode.key === mode.key ? "text-secondary" : "text-placeholder hover:text-secondary"
-                    }`}
-                  >
-                    <mode.icon className="-my-1 h-4 w-4 flex-shrink-0" />
-                    {t(mode.i18n_title)}
-                  </div>
-                </CustomSelect.Option>
-              ))}
-            </CustomSelect>
-          </div>
+          <CustomSelect
+            value={currentMode}
+            onChange={(val: any) => setPeekMode(val)}
+            customButton={
+              <Tooltip tooltipContent={t("common.toggle_peek_view_layout")} isMobile={isMobile}>
+                <button type="button">
+                  <currentMode.icon className="h-4 w-4 text-tertiary hover:text-secondary" />
+                </button>
+              </Tooltip>
+            }
+          >
+            {PEEK_OPTIONS.map((mode) => (
+              <CustomSelect.Option key={mode.key} value={mode.key}>
+                <div
+                  className={`flex items-center gap-1.5 ${
+                    currentMode.key === mode.key ? "text-secondary" : "text-placeholder hover:text-secondary"
+                  }`}
+                >
+                  <mode.icon className="-my-1 h-4 w-4 flex-shrink-0" />
+                  {t(mode.i18n_title)}
+                </div>
+              </CustomSelect.Option>
+            ))}
+          </CustomSelect>
         )}
-      </div>
-      <div className="flex items-center gap-x-4">
-        <NameDescriptionUpdateStatus isSubmitting={isSubmitting} />
-        <div className="flex items-center gap-2">
-          {currentUser && !isArchived && (
-            <IssueSubscription workspaceSlug={workspaceSlug} projectId={projectId} issueId={issueId} />
-          )}
-          <Tooltip tooltipContent={t("common.actions.copy_link")} isMobile={isMobile}>
-            <IconButton variant="secondary" size="lg" onClick={handleCopyText} icon={CopyLinkIcon} />
-          </Tooltip>
-          {issueDetails && (
-            <WorkItemDetailQuickActions
-              parentRef={parentRef}
-              issue={issueDetails}
-              handleDelete={handleDeleteIssue}
-              handleArchive={handleArchiveIssue}
-              handleRestore={handleRestoreIssue}
-              readOnly={disabled}
-              toggleDeleteIssueModal={toggleDeleteIssueModal}
-              toggleArchiveIssueModal={toggleArchiveIssueModal}
-              toggleDuplicateIssueModal={toggleDuplicateIssueModal}
-              toggleEditIssueModal={toggleEditIssueModal}
-              isPeekMode
-            />
-          )}
-        </div>
       </div>
     </div>
   );
