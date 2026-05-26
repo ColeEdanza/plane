@@ -34,6 +34,12 @@ type TIssueActivity = {
   issueId: string;
   disabled?: boolean;
   isIntakeIssue?: boolean;
+  /**
+   * CSFD fork: when the peek view renders its own panel-level composer
+   * (always-visible bottom bar), suppress this component's inline composer
+   * so we don't show two of them.
+   */
+  hideInlineComposer?: boolean;
 };
 
 export type TActivityOperations = {
@@ -44,7 +50,14 @@ export type TActivityOperations = {
 };
 
 export const IssueActivity = observer(function IssueActivity(props: TIssueActivity) {
-  const { workspaceSlug, projectId, issueId, disabled = false, isIntakeIssue = false } = props;
+  const {
+    workspaceSlug,
+    projectId,
+    issueId,
+    disabled = false,
+    isIntakeIssue = false,
+    hideInlineComposer = false,
+  } = props;
   // i18n
   const { t } = useTranslation();
   // hooks
@@ -132,7 +145,7 @@ export const IssueActivity = observer(function IssueActivity(props: TIssueActivi
       <div className="space-y-3">
         <div className="min-h-[200px]">
           <div className="space-y-3">
-            {!disabled && sortOrder === E_SORT_ORDER.DESC && renderCommentCreationBox}
+            {!disabled && !hideInlineComposer && sortOrder === E_SORT_ORDER.DESC && renderCommentCreationBox}
             <IssueActivityCommentRoot
               projectId={projectId}
               workspaceSlug={workspaceSlug}
@@ -144,7 +157,7 @@ export const IssueActivity = observer(function IssueActivity(props: TIssueActivi
               disabled={disabled}
               sortOrder={sortOrder || E_SORT_ORDER.ASC}
             />
-            {!disabled && sortOrder === E_SORT_ORDER.ASC && renderCommentCreationBox}
+            {!disabled && !hideInlineComposer && sortOrder === E_SORT_ORDER.ASC && renderCommentCreationBox}
           </div>
         </div>
       </div>

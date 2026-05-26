@@ -4,6 +4,9 @@
  * See the LICENSE file for details.
  */
 
+/* eslint-disable no-shadow -- upstream pattern: issueOperations methods reuse
+   workspaceSlug / projectId / issueId names as params; out of scope to rename. */
+
 import { useMemo } from "react";
 import { observer } from "mobx-react";
 // plane imports
@@ -24,6 +27,7 @@ import { useUserPermissions } from "@/hooks/store/user";
 import { useAppRouter } from "@/hooks/use-app-router";
 // local components
 import { IssuePeekOverview } from "../peek-overview";
+import { PeekCommentComposer } from "../peek-overview/comment-composer";
 import { IssueMainContent } from "./main-content";
 import { IssueDetailsSidebar } from "./sidebar";
 
@@ -239,14 +243,23 @@ export const IssueDetailRoot = observer(function IssueDetailRoot(props: TIssueDe
         />
       ) : (
         <div className="flex h-full w-full overflow-hidden">
-          <div className="h-full w-full space-y-6 overflow-y-auto px-9 py-5">
-            <IssueMainContent
+          {/* Main column = scrollable content + pinned composer (CSFD fork). */}
+          <div className="flex h-full w-full min-w-0 flex-col">
+            <div className="flex-1 space-y-6 overflow-y-auto px-9 py-5">
+              <IssueMainContent
+                workspaceSlug={workspaceSlug}
+                projectId={projectId}
+                issueId={issueId}
+                issueOperations={issueOperations}
+                isEditable={isEditable}
+                isArchived={is_archived}
+              />
+            </div>
+            <PeekCommentComposer
               workspaceSlug={workspaceSlug}
               projectId={projectId}
               issueId={issueId}
-              issueOperations={issueOperations}
-              isEditable={isEditable}
-              isArchived={is_archived}
+              disabled={is_archived || !isEditable}
             />
           </div>
           <div

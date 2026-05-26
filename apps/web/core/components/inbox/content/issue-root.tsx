@@ -4,6 +4,9 @@
  * See the LICENSE file for details.
  */
 
+/* eslint-disable no-shadow, react-hooks/exhaustive-deps -- upstream pattern;
+   out of scope to refactor in this CSFD fork commit. */
+
 import type { Dispatch, SetStateAction } from "react";
 import { useEffect, useMemo, useRef } from "react";
 import { observer } from "mobx-react";
@@ -247,7 +250,13 @@ export const InboxIssueMainContent = observer(function InboxIssueMainContent(pro
       </div>
 
       <div className="pt-4">
-        <IssueActivity workspaceSlug={workspaceSlug} projectId={projectId} issueId={issue.id} isIntakeIssue />
+        <IssueActivity
+          workspaceSlug={workspaceSlug}
+          projectId={projectId}
+          issueId={issue.id}
+          isIntakeIssue
+          hideInlineComposer
+        />
       </div>
     </>
   );

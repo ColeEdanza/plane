@@ -4,6 +4,8 @@
  * See the LICENSE file for details.
  */
 
+/* eslint-disable no-shadow -- upstream pattern; out of scope to refactor. */
+
 import { useEffect, useRef, useState } from "react";
 import { observer } from "mobx-react";
 // plane imports
@@ -206,7 +208,13 @@ export const IssueMainContent = observer(function IssueMainContent(props: Props)
         />
       )}
 
-      <IssueActivity workspaceSlug={workspaceSlug} projectId={projectId} issueId={issueId} disabled={isArchived} />
+      <IssueActivity
+        workspaceSlug={workspaceSlug}
+        projectId={projectId}
+        issueId={issueId}
+        disabled={isArchived}
+        hideInlineComposer
+      />
     </>
   );
 });

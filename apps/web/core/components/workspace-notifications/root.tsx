@@ -10,7 +10,6 @@ import useSWR from "swr";
 // plane imports
 import { ENotificationLoader, ENotificationQueryParamType } from "@plane/constants";
 import { EmptyStateCompact } from "@plane/propel/empty-state";
-import { cn } from "@plane/utils";
 // components
 import { LogoSpinner } from "@/components/common/logo-spinner";
 // hooks
@@ -38,7 +37,7 @@ export const NotificationsRoot = observer(function NotificationsRoot({ workspace
     getNotifications,
   } = useWorkspaceNotifications();
   const { fetchUserProjectInfo } = useUserPermissions();
-  const { isWorkItem, PeekOverviewComponent, setPeekWorkItem } = useNotificationPreview();
+  const { PeekOverviewComponent, setPeekWorkItem } = useNotificationPreview();
   // derived values
   const { workspace_slug, project_id, issue_id, is_inbox_issue } =
     notificationLiteByNotificationId(currentSelectedNotificationId);
@@ -84,7 +83,7 @@ export const NotificationsRoot = observer(function NotificationsRoot({ workspace
   );
 
   return (
-    <div className={cn("h-full w-full overflow-hidden", isWorkItem && "overflow-y-auto")}>
+    <div className="h-full w-full overflow-hidden">
       {!currentSelectedNotificationId ? (
         <div className="flex size-full items-center justify-center">
           <EmptyStateCompact assetKey="unknown" assetClassName="size-20" />

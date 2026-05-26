@@ -18,6 +18,7 @@ import { useAppRouter } from "@/hooks/use-app-router";
 // local imports
 import { InboxIssueActionsHeader } from "./inbox-issue-header";
 import { InboxIssueMainContent } from "./issue-root";
+import { PeekCommentComposer } from "@/components/issues/peek-overview/comment-composer";
 
 type TInboxContentRoot = {
   workspaceSlug: string;
@@ -99,7 +100,7 @@ export const InboxContentRoot = observer(function InboxContentRoot(props: TInbox
             embedRemoveCurrentNotification={embedRemoveCurrentNotification}
           />
         </div>
-        <ContentWrapper className="divide-y-2 divide-subtle-1">
+        <ContentWrapper className="min-h-0 flex-1 divide-y-2 divide-subtle-1">
           <InboxIssueMainContent
             workspaceSlug={workspaceSlug}
             projectId={projectId}
@@ -109,6 +110,14 @@ export const InboxContentRoot = observer(function InboxContentRoot(props: TInbox
             setIsSubmitting={setIsSubmitting}
           />
         </ContentWrapper>
+        {inboxIssue.issue.id && (
+          <PeekCommentComposer
+            workspaceSlug={workspaceSlug}
+            projectId={projectId}
+            issueId={inboxIssue.issue.id}
+            disabled={!isEditable || isIssueDisabled || readOnly}
+          />
+        )}
       </div>
     </>
   );
