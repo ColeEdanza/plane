@@ -32,6 +32,7 @@ from .issue import (
     CommentReaction,
     Issue,
     IssueActivity,
+    IssueActivityReaction,
     IssueAssignee,
     IssueBlocker,
     IssueComment,

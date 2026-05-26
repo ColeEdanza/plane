@@ -11,10 +11,12 @@ import { Tooltip } from "@plane/propel/tooltip";
 import { renderFormattedTime, renderFormattedDate, calculateTimeAgo } from "@plane/utils";
 import { useIssueDetail } from "@/hooks/store/use-issue-detail";
 import { usePlatformOS } from "@/hooks/use-platform-os";
+import { useUser } from "@/hooks/store/user";
 // plane web imports
 import { IssueCreatorDisplay } from "@/plane-web/components/issues/issue-details/issue-creator";
 // local imports
 import { IssueUser } from "../";
+import { IssueActivityRowReactions } from "../activity-reaction";
 
 type TIssueActivityBlockComponent = {
   icon?: ReactNode;
@@ -33,7 +35,11 @@ export function IssueActivityBlockComponent(props: TIssueActivityBlockComponent)
 
   const activity = getActivityById(activityId);
   const { isMobile } = usePlatformOS();
+  const { data: currentUser } = useUser();
   if (!activity) return <></>;
+  const workspaceSlug = activity.workspace_detail?.slug;
+  const projectId = activity.project;
+  const issueId = activity.issue;
   return (
     <div
       className={`relative flex items-center gap-3 text-caption-sm-regular ${
@@ -44,7 +50,7 @@ export function IssueActivityBlockComponent(props: TIssueActivityBlockComponent)
       <div className="z-[4] flex h-7 w-7 flex-shrink-0 items-center justify-center overflow-hidden rounded-lg border border-subtle bg-layer-2 text-secondary shadow-raised-100">
         {icon ? icon : <Network className="h-3.5 w-3.5" />}
       </div>
-      <div className="w-full truncate text-secondary">
+      <div className="min-w-0 flex-1 truncate text-secondary">
         {!activity?.field && activity?.verb === "created" ? (
           <IssueCreatorDisplay activityId={activityId} customUserName={customUserName} />
         ) : (
@@ -60,6 +66,17 @@ export function IssueActivityBlockComponent(props: TIssueActivityBlockComponent)
           </Tooltip>
         </span>
       </div>
+      {currentUser?.id && workspaceSlug && projectId && issueId && (
+        <div className="flex-shrink-0">
+          <IssueActivityRowReactions
+            workspaceSlug={workspaceSlug}
+            projectId={projectId}
+            issueId={issueId}
+            activityId={activityId}
+            currentUserId={currentUser.id}
+          />
+        </div>
+      )}
     </div>
   );
 }

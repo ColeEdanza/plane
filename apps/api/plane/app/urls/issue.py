@@ -16,6 +16,7 @@ from plane.app.views import (
     IssueCommentViewSet,
     IssueListEndpoint,
     IssueReactionViewSet,
+    IssueActivityReactionViewSet,
     IssueRelationViewSet,
     IssueSubscriberViewSet,
     ProjectUserDisplayPropertyEndpoint,
@@ -212,6 +213,18 @@ urlpatterns = [
         name="project-issue-comment-reactions",
     ),
     ## End Comment Reactions
+    # Issue Activity Reactions (CSFD fork)
+    path(
+        "workspaces/<str:slug>/projects/<uuid:project_id>/issues/<uuid:issue_id>/activities/<uuid:activity_id>/reactions/",
+        IssueActivityReactionViewSet.as_view({"get": "list", "post": "create"}),
+        name="project-issue-activity-reactions",
+    ),
+    path(
+        "workspaces/<str:slug>/projects/<uuid:project_id>/issues/<uuid:issue_id>/activities/<uuid:activity_id>/reactions/<str:reaction_code>/",
+        IssueActivityReactionViewSet.as_view({"delete": "destroy"}),
+        name="project-issue-activity-reactions",
+    ),
+    ## End Issue Activity Reactions
     ## ProjectUserProperty
     path(
         "workspaces/<str:slug>/projects/<uuid:project_id>/user-properties/",

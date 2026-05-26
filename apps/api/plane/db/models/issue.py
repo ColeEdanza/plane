@@ -643,6 +643,33 @@ class CommentReaction(ProjectBaseModel):
         return f"{self.issue.name} {self.actor.email}"
 
 
+class IssueActivityReaction(ProjectBaseModel):
+    actor = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="issue_activity_reactions",
+    )
+    activity = models.ForeignKey(IssueActivity, on_delete=models.CASCADE, related_name="activity_reactions")
+    reaction = models.TextField()
+
+    class Meta:
+        unique_together = ["activity", "actor", "reaction", "deleted_at"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["activity", "actor", "reaction"],
+                condition=models.Q(deleted_at__isnull=True),
+                name="issue_activity_reaction_unique_activity_actor_reaction_when_deleted_at_null",
+            )
+        ]
+        verbose_name = "Issue Activity Reaction"
+        verbose_name_plural = "Issue Activity Reactions"
+        db_table = "issue_activity_reactions"
+        ordering = ("-created_at",)
+
+    def __str__(self):
+        return f"{self.activity_id} {self.actor.email} {self.reaction}"
+
+
 class IssueVote(ProjectBaseModel):
     issue = models.ForeignKey(Issue, on_delete=models.CASCADE, related_name="votes")
     actor = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="votes")
