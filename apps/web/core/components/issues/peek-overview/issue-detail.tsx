@@ -4,6 +4,9 @@
  * See the LICENSE file for details.
  */
 
+/* eslint-disable no-shadow -- upstream pattern: inner fetch handlers reuse the
+   outer issueId parameter name; out of scope to rename. */
+
 import { useEffect } from "react";
 import { observer } from "mobx-react";
 // plane imports
@@ -30,7 +33,10 @@ import { useDebouncedDuplicateIssues } from "@/plane-web/hooks/use-debounced-dup
 import { WorkItemVersionService } from "@/services/issue";
 // local components
 import type { TIssueOperations } from "../issue-detail";
-import { IssueParentDetail } from "../issue-detail/parent";
+import { DescriptionCollapse } from "../issue-detail/description-collapse";
+import { IssueInlineProperties } from "../issue-detail/inline-properties";
+import { IssueMetadataFooter } from "../issue-detail/metadata-footer";
+import { IssueParentPill } from "../issue-detail/parent";
 import { IssueReaction } from "../issue-detail/reactions";
 import { IssueTitleInput } from "../title-input";
 // services init
@@ -98,17 +104,19 @@ export const PeekOverviewIssueDetails = observer(function PeekOverviewIssueDetai
 
   return (
     <div className="space-y-2">
-      {issue.parent_id && (
-        <IssueParentDetail
-          workspaceSlug={workspaceSlug}
-          projectId={issue.project_id}
-          issueId={issueId}
-          issue={issue}
-          issueOperations={issueOperations}
-        />
-      )}
       <div className="flex items-center justify-between gap-2">
-        <IssueTypeSwitcher issueId={issueId} disabled={isArchived || disabled} />
+        <div className="flex min-w-0 items-center gap-2">
+          <IssueTypeSwitcher issueId={issueId} disabled={isArchived || disabled} />
+          {issue.parent_id && (
+            <IssueParentPill
+              workspaceSlug={workspaceSlug}
+              projectId={issue.project_id}
+              issueId={issueId}
+              issue={issue}
+              issueOperations={issueOperations}
+            />
+          )}
+        </div>
         {duplicateIssues?.length > 0 && (
           <DeDupeIssuePopoverRoot
             workspaceSlug={workspaceSlug}
@@ -129,28 +137,40 @@ export const PeekOverviewIssueDetails = observer(function PeekOverviewIssueDetai
         disabled={disabled || isArchived}
         value={issue.name}
         containerClassName="-ml-3"
+        className="py-1 text-28 leading-snug font-semibold"
       />
 
-      <DescriptionInput
-        issueSequenceId={issue.sequence_id}
-        containerClassName="-ml-3 border-none"
-        disabled={disabled || isArchived}
-        editorRef={editorRef}
-        entityId={issue.id}
-        fileAssetType={EFileAssetType.ISSUE_DESCRIPTION}
-        initialValue={issueDescription}
-        key={issue.id}
-        onSubmit={async (value, isMigrationUpdate) => {
-          if (!issue.id || !issue.project_id) return;
-          await issueOperations.update(workspaceSlug, issue.project_id, issue.id, {
-            description_html: value.description_html,
-            ...(isMigrationUpdate ? { skip_activity: "true" } : {}),
-          });
-        }}
-        setIsSubmitting={(value) => setIsSubmitting(value)}
-        projectId={issue.project_id}
+      <IssueInlineProperties
         workspaceSlug={workspaceSlug}
+        projectId={issue.project_id}
+        issueId={issueId}
+        issueOperations={issueOperations}
+        isEditable={!disabled}
+        isArchived={isArchived}
       />
+
+      <DescriptionCollapse>
+        <DescriptionInput
+          issueSequenceId={issue.sequence_id}
+          containerClassName="-ml-3 border-none"
+          disabled={disabled || isArchived}
+          editorRef={editorRef}
+          entityId={issue.id}
+          fileAssetType={EFileAssetType.ISSUE_DESCRIPTION}
+          initialValue={issueDescription}
+          key={issue.id}
+          onSubmit={async (value, isMigrationUpdate) => {
+            if (!issue.id || !issue.project_id) return;
+            await issueOperations.update(workspaceSlug, issue.project_id, issue.id, {
+              description_html: value.description_html,
+              ...(isMigrationUpdate ? { skip_activity: "true" } : {}),
+            });
+          }}
+          setIsSubmitting={(value) => setIsSubmitting(value)}
+          projectId={issue.project_id}
+          workspaceSlug={workspaceSlug}
+        />
+      </DescriptionCollapse>
 
       <div className="flex items-center justify-between gap-2">
         {currentUser && (
@@ -192,6 +212,8 @@ export const PeekOverviewIssueDetails = observer(function PeekOverviewIssueDetai
           />
         )}
       </div>
+
+      <IssueMetadataFooter issueId={issueId} />
     </div>
   );
 });

@@ -34,8 +34,11 @@ import { IssueDetailWidgets } from "../issue-detail-widgets";
 import { NameDescriptionUpdateStatus } from "../issue-update-status";
 import { PeekOverviewProperties } from "../peek-overview/properties";
 import { IssueTitleInput } from "../title-input";
+import { DescriptionCollapse } from "./description-collapse";
 import { IssueActivity } from "./issue-activity";
-import { IssueParentDetail } from "./parent";
+import { IssueInlineProperties } from "./inline-properties";
+import { IssueMetadataFooter } from "./metadata-footer";
+import { IssueParentPill } from "./parent";
 import { IssueReaction } from "./reactions";
 import type { TIssueOperations } from "./root";
 // services init
@@ -95,18 +98,19 @@ export const IssueMainContent = observer(function IssueMainContent(props: Props)
   return (
     <>
       <div className="space-y-4 rounded-lg">
-        {issue.parent_id && (
-          <IssueParentDetail
-            workspaceSlug={workspaceSlug}
-            projectId={projectId}
-            issueId={issueId}
-            issue={issue}
-            issueOperations={issueOperations}
-          />
-        )}
-
         <div className="mb-2.5 flex items-center justify-between gap-4">
-          <IssueTypeSwitcher issueId={issueId} disabled={isArchived || !isEditable} />
+          <div className="flex min-w-0 items-center gap-2">
+            <IssueTypeSwitcher issueId={issueId} disabled={isArchived || !isEditable} />
+            {issue.parent_id && (
+              <IssueParentPill
+                workspaceSlug={workspaceSlug}
+                projectId={projectId}
+                issueId={issueId}
+                issue={issue}
+                issueOperations={issueOperations}
+              />
+            )}
+          </div>
           <div className="flex items-center gap-3">
             <NameDescriptionUpdateStatus isSubmitting={isSubmitting} />
             {duplicateIssues?.length > 0 && (
@@ -132,28 +136,40 @@ export const IssueMainContent = observer(function IssueMainContent(props: Props)
           disabled={isArchived || !isEditable}
           value={issue.name}
           containerClassName="-ml-3"
+          className="py-1 text-28 leading-snug font-semibold"
         />
 
-        <DescriptionInput
-          issueSequenceId={issue.sequence_id}
-          containerClassName="-ml-6 border-none p-0! pl-6!"
-          disabled={isArchived || !isEditable}
-          editorRef={editorRef}
-          entityId={issue.id}
-          fileAssetType={EFileAssetType.ISSUE_DESCRIPTION}
-          initialValue={issue.description_html}
-          key={issue.id}
-          onSubmit={async (value, isMigrationUpdate) => {
-            if (!issue.id || !issue.project_id) return;
-            await issueOperations.update(workspaceSlug, issue.project_id, issue.id, {
-              description_html: value.description_html,
-              ...(isMigrationUpdate ? { skip_activity: "true" } : {}),
-            });
-          }}
-          projectId={issue.project_id}
-          setIsSubmitting={(value) => setIsSubmitting(value)}
+        <IssueInlineProperties
           workspaceSlug={workspaceSlug}
+          projectId={projectId}
+          issueId={issueId}
+          issueOperations={issueOperations}
+          isEditable={isEditable}
+          isArchived={isArchived}
         />
+
+        <DescriptionCollapse>
+          <DescriptionInput
+            issueSequenceId={issue.sequence_id}
+            containerClassName="-ml-6 border-none p-0! pl-6!"
+            disabled={isArchived || !isEditable}
+            editorRef={editorRef}
+            entityId={issue.id}
+            fileAssetType={EFileAssetType.ISSUE_DESCRIPTION}
+            initialValue={issue.description_html}
+            key={issue.id}
+            onSubmit={async (value, isMigrationUpdate) => {
+              if (!issue.id || !issue.project_id) return;
+              await issueOperations.update(workspaceSlug, issue.project_id, issue.id, {
+                description_html: value.description_html,
+                ...(isMigrationUpdate ? { skip_activity: "true" } : {}),
+              });
+            }}
+            projectId={issue.project_id}
+            setIsSubmitting={(value) => setIsSubmitting(value)}
+            workspaceSlug={workspaceSlug}
+          />
+        </DescriptionCollapse>
 
         <div className="flex items-center justify-between gap-2">
           {currentUser && (
@@ -207,6 +223,8 @@ export const IssueMainContent = observer(function IssueMainContent(props: Props)
           disabled={!isEditable || isArchived}
         />
       )}
+
+      <IssueMetadataFooter issueId={issueId} />
 
       <IssueActivity
         workspaceSlug={workspaceSlug}
