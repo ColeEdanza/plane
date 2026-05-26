@@ -52,11 +52,21 @@ type Props = {
   isArchived: boolean;
   isSubmitting: TNameDescriptionLoader;
   setIsSubmitting: (value: TNameDescriptionLoader) => void;
+  titleAnchorRef?: (el: HTMLDivElement | null) => void;
 };
 
 export const PeekOverviewIssueDetails = observer(function PeekOverviewIssueDetails(props: Props) {
-  const { editorRef, workspaceSlug, issueId, issueOperations, disabled, isArchived, isSubmitting, setIsSubmitting } =
-    props;
+  const {
+    editorRef,
+    workspaceSlug,
+    issueId,
+    issueOperations,
+    disabled,
+    isArchived,
+    isSubmitting,
+    setIsSubmitting,
+    titleAnchorRef,
+  } = props;
   // store hooks
   const { data: currentUser } = useUser();
   const {
@@ -127,18 +137,20 @@ export const PeekOverviewIssueDetails = observer(function PeekOverviewIssueDetai
           />
         )}
       </div>
-      <IssueTitleInput
-        workspaceSlug={workspaceSlug}
-        projectId={issue.project_id}
-        issueId={issue.id}
-        isSubmitting={isSubmitting}
-        setIsSubmitting={(value) => setIsSubmitting(value)}
-        issueOperations={issueOperations}
-        disabled={disabled || isArchived}
-        value={issue.name}
-        containerClassName="-ml-3"
-        className="py-1 text-28 leading-snug font-semibold"
-      />
+      <div ref={titleAnchorRef ?? undefined}>
+        <IssueTitleInput
+          workspaceSlug={workspaceSlug}
+          projectId={issue.project_id}
+          issueId={issue.id}
+          isSubmitting={isSubmitting}
+          setIsSubmitting={(value) => setIsSubmitting(value)}
+          issueOperations={issueOperations}
+          disabled={disabled || isArchived}
+          value={issue.name}
+          containerClassName="-ml-3"
+          className="py-1 text-28 leading-snug font-semibold"
+        />
+      </div>
 
       <IssueInlineProperties
         workspaceSlug={workspaceSlug}

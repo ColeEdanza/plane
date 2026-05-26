@@ -4,7 +4,7 @@
  * See the LICENSE file for details.
  */
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { observer } from "mobx-react";
 import { createPortal } from "react-dom";
 // plane imports
@@ -64,6 +64,27 @@ export const IssueView = observer(function IssueView(props: IIssueView) {
   // ref
   const issuePeekOverviewRef = useRef<HTMLDivElement>(null);
   const editorRef = useRef<EditorRefApi>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  // header collapse on scroll
+  const [titleEl, setTitleEl] = useState<HTMLDivElement | null>(null);
+  const [isHeaderCollapsed, setIsHeaderCollapsed] = useState(false);
+  useEffect(() => {
+    const root = scrollContainerRef.current;
+    if (!titleEl || !root || typeof IntersectionObserver === "undefined") return;
+    const io = new IntersectionObserver(
+      ([entry]) => {
+        // Title is "above" the scroll viewport when it has scrolled out the
+        // top. boundingClientRect.bottom < rootBounds.top means it's above
+        // the visible window.
+        if (!entry || !entry.rootBounds) return;
+        const above = entry.boundingClientRect.bottom < entry.rootBounds.top;
+        setIsHeaderCollapsed(!entry.isIntersecting && above);
+      },
+      { root, threshold: 0 }
+    );
+    io.observe(titleEl);
+    return () => io.disconnect();
+  }, [titleEl]);
   // store hooks
   const {
     setPeekIssue,
@@ -172,6 +193,7 @@ export const IssueView = observer(function IssueView(props: IIssueView) {
                 disabled={disabled}
                 embedIssue={embedIssue}
                 issueOperations={issueOperations}
+                isCollapsed={isHeaderCollapsed && ["side-peek", "modal"].includes(peekMode)}
               />
               {/* content + panel-level pinned composer.
                   Wrapped in a flex column so the scrollable area takes
@@ -179,7 +201,10 @@ export const IssueView = observer(function IssueView(props: IIssueView) {
                   sibling at the bottom — always visible regardless of
                   scroll position. */}
               <div className="flex min-h-0 flex-1 flex-col">
-                <div className="vertical-scrollbar relative scrollbar-md min-h-0 w-full flex-1 overflow-hidden overflow-y-auto">
+                <div
+                  ref={scrollContainerRef}
+                  className="vertical-scrollbar relative scrollbar-md min-h-0 w-full flex-1 overflow-hidden overflow-y-auto"
+                >
                   {["side-peek", "modal"].includes(peekMode) ? (
                     <div className="relative flex flex-col gap-3 space-y-3 px-8 py-5">
                       <PeekOverviewIssueDetails
@@ -192,6 +217,7 @@ export const IssueView = observer(function IssueView(props: IIssueView) {
                         isArchived={is_archived}
                         isSubmitting={isSubmitting}
                         setIsSubmitting={(value) => setIsSubmitting(value)}
+                        titleAnchorRef={setTitleEl}
                       />
 
                       <div className="py-2">

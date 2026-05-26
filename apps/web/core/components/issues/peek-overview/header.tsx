@@ -24,6 +24,7 @@ import { useProject } from "@/hooks/store/use-project";
 import { useUser } from "@/hooks/store/user";
 import { usePlatformOS } from "@/hooks/use-platform-os";
 // local imports
+import { IssueLikeButton } from "../issue-detail/like-button";
 import { IssueSubscription } from "../issue-detail/subscription";
 import type { TIssueOperations } from "../issue-detail";
 import { WorkItemDetailQuickActions } from "../issue-layouts/quick-action-dropdowns";
@@ -68,6 +69,7 @@ export type PeekOverviewHeaderProps = {
   handleRestoreIssue: () => Promise<void>;
   isSubmitting: TNameDescriptionLoader;
   issueOperations: TIssueOperations;
+  isCollapsed?: boolean;
 };
 
 export const IssuePeekOverviewHeader = observer(function IssuePeekOverviewHeader(props: PeekOverviewHeaderProps) {
@@ -88,6 +90,7 @@ export const IssuePeekOverviewHeader = observer(function IssuePeekOverviewHeader
     handleRestoreIssue,
     isSubmitting,
     issueOperations,
+    isCollapsed = false,
   } = props;
   // ref
   const parentRef = useRef<HTMLDivElement>(null);
@@ -164,28 +167,42 @@ export const IssuePeekOverviewHeader = observer(function IssuePeekOverviewHeader
         currentMode?.key === "full-screen" ? "border-b border-subtle" : ""
       }`}
     >
-      {/* LEFT: state pill only */}
-      {issueDetails?.project_id ? (
-        <div className="flex-shrink-0">
-          <StateDropdown
-            value={issueDetails?.state_id}
-            onChange={(val) => issueOperations.update(workspaceSlug, projectId, issueId, { state_id: val })}
-            projectId={issueDetails.project_id}
-            disabled={disabled || isArchived}
-            buttonVariant="border-with-text"
-            buttonContainerClassName="h-7"
-            buttonClassName="text-body-sm-medium px-2.5"
-            showTooltip={false}
-            dropdownArrow
-          />
-        </div>
-      ) : (
-        <span />
-      )}
+      {/* LEFT: state pill (icon-only when collapsed) + collapsed title slot */}
+      <div className="flex min-w-0 flex-1 items-center gap-3">
+        {issueDetails?.project_id ? (
+          <div className="flex-shrink-0">
+            <StateDropdown
+              value={issueDetails?.state_id}
+              onChange={(val) => issueOperations.update(workspaceSlug, projectId, issueId, { state_id: val })}
+              projectId={issueDetails.project_id}
+              disabled={disabled || isArchived}
+              buttonVariant={isCollapsed ? "border-without-text" : "border-with-text"}
+              buttonContainerClassName="h-7"
+              buttonClassName={isCollapsed ? "" : "text-body-sm-medium px-2.5"}
+              showTooltip
+              dropdownArrow={!isCollapsed}
+            />
+          </div>
+        ) : (
+          <span />
+        )}
+        {isCollapsed && issueDetails?.name && (
+          <span className="truncate text-body-sm-semibold text-primary">{issueDetails.name}</span>
+        )}
+      </div>
 
-      {/* RIGHT: action cluster — subscribe / link / more / close / fullscreen / peek-mode */}
+      {/* RIGHT: action cluster — like / subscribe / link / more / close / fullscreen / peek-mode */}
       <div className="flex items-center gap-3">
         <NameDescriptionUpdateStatus isSubmitting={isSubmitting} />
+        {currentUser && !isArchived && (
+          <IssueLikeButton
+            workspaceSlug={workspaceSlug}
+            projectId={projectId}
+            issueId={issueId}
+            currentUserId={currentUser.id}
+            disabled={disabled}
+          />
+        )}
         {currentUser && !isArchived && (
           <IssueSubscription workspaceSlug={workspaceSlug} projectId={projectId} issueId={issueId} />
         )}
