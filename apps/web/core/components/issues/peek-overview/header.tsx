@@ -173,6 +173,8 @@ export const IssuePeekOverviewHeader = observer(function IssuePeekOverviewHeader
             projectId={issueDetails.project_id}
             disabled={disabled || isArchived}
             buttonVariant="border-with-text"
+            buttonContainerClassName="h-7"
+            buttonClassName="text-body-sm-medium px-2.5"
             showTooltip={false}
             dropdownArrow
           />
