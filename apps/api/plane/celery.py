@@ -77,6 +77,21 @@ app.conf.beat_schedule = {
         "task": "plane.bgtasks.exporter_expired_task.delete_old_s3_link",
         "schedule": crontab(hour=3, minute=45),  # UTC 03:45
     },
+    # CSFD fork — HIPAA audit log
+    # Office TZ is America/Chicago (CST/CDT = UTC-6/-5). Sunday 02:00 CT ≈
+    # Sunday 07:00 / 08:00 UTC depending on DST; we schedule at 08:00 UTC
+    # year-round, so summer reports go out at 03:00 CT instead of 02:00 —
+    # acceptable for a digest email.
+    "audit-log-weekly-summary": {
+        "task": "plane.app.audit.tasks.weekly_summary",
+        "schedule": crontab(day_of_week="sun", hour=8, minute=0),
+    },
+    # Retention prune runs the same Sunday at 08:30 UTC, AFTER the summary
+    # so the summary always sees the un-pruned data.
+    "audit-log-retention-prune": {
+        "task": "plane.app.audit.tasks.prune",
+        "schedule": crontab(day_of_week="sun", hour=8, minute=30),
+    },
 }
 
 

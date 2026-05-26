@@ -1,0 +1,35 @@
+# CSFD fork — audit webhook consumer sidecar.
+#
+# Deploy this on the office Synology *next to* the Plane stack (same Docker
+# network so plane-db is reachable). Not deployed into Plane's own compose
+# file so its lifecycle (rebuild / restart) is independent of Plane's.
+#
+# Local-dev convenience: this compose file shares the existing plane-fork
+# default network so plane-db:5432 resolves without further wiring. From
+# the repo root:
+#     docker compose -f docker-compose-local.yml -f services/audit-consumer/docker-compose.yml up -d audit-consumer
+#
+# Required env (set in services/audit-consumer/.env):
+#     PLANE_WEBHOOK_SECRET — must match the secret of the Plane workspace
+#                            webhook that targets http://audit-consumer:8088/webhook
+#     AUDIT_DATABASE_URL   — defaults to plane:plane@plane-db:5432/plane_audit for dev
+#                            override in prod with the audit_consumer role's DSN
+version: "3.8"
+
+services:
+  audit-consumer:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: plane-audit-consumer
+    restart: unless-stopped
+    environment:
+      AUDIT_DATABASE_URL: ${AUDIT_DATABASE_URL:-postgresql://plane:plane@plane-db:5432/plane_audit}
+      PLANE_WEBHOOK_SECRET: ${PLANE_WEBHOOK_SECRET:-}
+      PHI_MODELS: ${PHI_MODELS:-issue,issue_comment,issue_activity,project,workspace,user,issue_reaction,comment_reaction,issue_activity_reaction}
+      PORT: "8088"
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    ports:
+      - "${AUDIT_CONSUMER_PORT:-8088}:8088"
+    networks:
+      - default

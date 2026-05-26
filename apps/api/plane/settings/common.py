@@ -93,6 +93,8 @@ INSTALLED_APPS = [
     "plane.license",
     "plane.api",
     "plane.authentication",
+    # CSFD fork — HIPAA audit log
+    "plane.app.audit",
     # Third-party things
     "rest_framework",
     "corsheaders",
@@ -114,6 +116,10 @@ MIDDLEWARE = [
     "plane.middleware.request_body_size.RequestBodySizeLimitMiddleware",
     "plane.middleware.logger.APITokenLogMiddleware",
     "plane.middleware.logger.RequestLoggerMiddleware",
+    # CSFD fork — HIPAA audit log (must be after AuthenticationMiddleware
+    # so request.user is populated; after RequestLoggerMiddleware so the
+    # logged status_code matches what AuditEvent records).
+    "plane.app.audit.middleware.AuditMiddleware",
 ]
 
 # Rest Framework settings
@@ -215,6 +221,41 @@ if os.environ.get("ENABLE_READ_REPLICA", "0") == "1":
     DATABASE_ROUTERS = ["plane.utils.core.dbrouters.ReadReplicaRouter"]
     # Add middleware at the end for read replica routing
     MIDDLEWARE.append("plane.middleware.db_routing.ReadReplicaRoutingMiddleware")
+
+
+# ---------------------------------------------------------------------
+# CSFD fork — HIPAA audit log database
+# ---------------------------------------------------------------------
+# Same Postgres instance as Plane in prod, separate logical database.
+# When AUDIT_DATABASE_URL is set OR AUDIT_POSTGRES_DB is set, audit-app
+# writes are routed there via plane.app.audit.db_router.AuditRouter.
+# When neither is set, the AuditRouter falls back to the "default" alias
+# so the app remains runnable in stripped-down dev environments.
+if bool(os.environ.get("AUDIT_DATABASE_URL")):
+    DATABASES["audit"] = dj_database_url.parse(os.environ.get("AUDIT_DATABASE_URL"))
+elif os.environ.get("AUDIT_POSTGRES_DB"):
+    DATABASES["audit"] = {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": os.environ.get("AUDIT_POSTGRES_DB"),
+        "USER": os.environ.get("AUDIT_POSTGRES_USER", os.environ.get("POSTGRES_USER")),
+        "PASSWORD": os.environ.get("AUDIT_POSTGRES_PASSWORD", os.environ.get("POSTGRES_PASSWORD")),
+        "HOST": os.environ.get("AUDIT_POSTGRES_HOST", os.environ.get("POSTGRES_HOST")),
+        "PORT": os.environ.get("AUDIT_POSTGRES_PORT", os.environ.get("POSTGRES_PORT", "5432")),
+    }
+
+# Always install the audit router so the allow_migrate hook can keep
+# audit-app migrations off the default DB even when "audit" alias is
+# absent (router falls back to "default" in that case).
+_existing_routers = list(globals().get("DATABASE_ROUTERS", []))
+_existing_routers.append("plane.app.audit.db_router.AuditRouter")
+DATABASE_ROUTERS = _existing_routers
+
+# Privacy-officer recipient for the weekly audit summary cron.
+# Per DECISIONS.md (2026-05-25 audit log operational decisions).
+AUDIT_REVIEW_EMAIL = os.environ.get("AUDIT_REVIEW_EMAIL", "dr@cs.dental")
+AUDIT_REVIEW_FROM_EMAIL = os.environ.get(
+    "AUDIT_REVIEW_FROM_EMAIL", os.environ.get("DEFAULT_FROM_EMAIL", "no-reply@cs.dental")
+)
 
 
 # Redis Config
@@ -328,6 +369,8 @@ CELERY_IMPORTS = (
     # issue version tasks
     "plane.bgtasks.issue_version_sync",
     "plane.bgtasks.issue_description_version_sync",
+    # CSFD fork — HIPAA audit log
+    "plane.app.audit.tasks",
 )
 
 FILE_SIZE_LIMIT = int(os.environ.get("FILE_SIZE_LIMIT", 5242880))
