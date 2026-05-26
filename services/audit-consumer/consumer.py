@@ -109,9 +109,17 @@ def _record(event_name, action, data):
             cur.execute(
                 """
                 INSERT INTO audit_events (
-                    id, timestamp, event_type, model_name, object_id, action, payload
+                    id, timestamp, event_type,
+                    user_email, user_agent, session_key,
+                    path, method,
+                    model_name, object_id, action,
+                    payload, reviewed_by_email
                 ) VALUES (
-                    gen_random_uuid(), %s, %s, %s, %s, %s, %s
+                    gen_random_uuid(), %s, %s,
+                    '', '', '',
+                    '', '',
+                    %s, %s, %s,
+                    %s, ''
                 )
                 """,
                 (

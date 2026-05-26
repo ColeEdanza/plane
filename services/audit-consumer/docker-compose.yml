@@ -4,17 +4,25 @@
 # network so plane-db is reachable). Not deployed into Plane's own compose
 # file so its lifecycle (rebuild / restart) is independent of Plane's.
 #
-# Local-dev convenience: this compose file shares the existing plane-fork
-# default network so plane-db:5432 resolves without further wiring. From
-# the repo root:
-#     docker compose -f docker-compose-local.yml -f services/audit-consumer/docker-compose.yml up -d audit-consumer
+# Two ways to bring this up locally:
+#
+# 1. Standalone, joining Plane's existing network (recommended for dev):
+#       cd services/audit-consumer
+#       docker compose --env-file .env up -d --build
+#    `plane-fork_dev_env` is the default network created by docker-compose-local.yml.
+#    If you renamed your project, update the `external: true` network name below.
+#
+# 2. Overlay onto Plane's compose (matches what you'd do on Synology):
+#       cd services/audit-consumer
+#       docker compose -f docker-compose.yml -f ../../docker-compose-local.yml --env-file .env up -d audit-consumer
+#    NOTE: order matters — the consumer compose must be the FIRST -f for the
+#    build context to resolve correctly.
 #
 # Required env (set in services/audit-consumer/.env):
 #     PLANE_WEBHOOK_SECRET — must match the secret of the Plane workspace
 #                            webhook that targets http://audit-consumer:8088/webhook
 #     AUDIT_DATABASE_URL   — defaults to plane:plane@plane-db:5432/plane_audit for dev
 #                            override in prod with the audit_consumer role's DSN
-version: "3.8"
 
 services:
   audit-consumer:
@@ -32,4 +40,8 @@ services:
     ports:
       - "${AUDIT_CONSUMER_PORT:-8088}:8088"
     networks:
-      - default
+      - plane-fork_dev_env
+
+networks:
+  plane-fork_dev_env:
+    external: true

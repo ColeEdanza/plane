@@ -90,5 +90,11 @@ LOGGING = {
             "handlers": ["console"],
             "propagate": False,
         },
+        # CSFD fork — HIPAA audit log (plane.app.audit.middleware / signals)
+        "plane.audit": {
+            "level": "INFO",
+            "handlers": ["console"],
+            "propagate": False,
+        },
     },
 }
