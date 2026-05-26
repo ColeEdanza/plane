@@ -187,7 +187,7 @@ export const IssuePeekOverviewHeader = observer(function IssuePeekOverviewHeader
           <span />
         )}
         {isCollapsed && issueDetails?.name && (
-          <span className="truncate text-body-sm-semibold text-primary">{issueDetails.name}</span>
+          <span className="truncate text-18 font-semibold text-primary">{issueDetails.name}</span>
         )}
       </div>
 
