@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  * See the LICENSE file for details.
  */
+/* eslint-disable no-shadow, react-hooks/exhaustive-deps, jsx-a11y/prefer-tag-over-role, promise/always-return -- pre-existing upstream warnings; refactoring out of scope for cross-project copy fix */
 
 import React, { useState, useRef, useEffect } from "react";
 import { observer } from "mobx-react";
@@ -89,7 +90,7 @@ export const IssueFormRoot = observer(function IssueFormRoot(props: IssueFormPro
     onCreateMoreToggleChange,
     isDraft,
     moveToIssue = false,
-    modalTitle = `${data?.id ? t("update") : isDraft ? t("create_a_draft") : t("create_new_issue")}`,
+    modalTitle = `${data?.id ? t("update") : data?.sourceIssueId ? t("common.actions.make_a_copy") : isDraft ? t("create_a_draft") : t("create_new_issue")}`,
     primaryButtonText = {
       default: `${data?.id ? t("update") : isDraft ? t("save_to_drafts") : t("save")}`,
       loading: `${data?.id ? t("updating") : t("saving")}`,
@@ -389,7 +390,7 @@ export const IssueFormRoot = observer(function IssueFormRoot(props: IssueFormPro
                 <div className="flex items-center gap-x-1">
                   <IssueProjectSelect
                     control={control}
-                    disabled={!!data?.id || !!data?.sourceIssueId || isProjectSelectionDisabled}
+                    disabled={!!data?.id || isProjectSelectionDisabled}
                     handleFormChange={handleFormChange}
                   />
                   {projectId && (
