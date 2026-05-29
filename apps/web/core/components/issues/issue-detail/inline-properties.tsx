@@ -25,7 +25,7 @@ type Props = {
 };
 
 const Divider = () => (
-  <span aria-hidden className="mx-2 inline-block h-5 flex-shrink-0 self-center border-l border-danger-strong" />
+  <span aria-hidden className="mx-2 inline-block h-5 flex-shrink-0 self-center border-l border-strong" />
 );
 
 const pillTextClass = "text-body-sm-regular";
